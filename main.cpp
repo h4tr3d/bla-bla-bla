@@ -2,6 +2,7 @@
 #include <unordered_map>
 #include <map>
 #include <algorithm>
+#include <numeric>
 
 #include <iostream>
 
@@ -29,6 +30,8 @@ struct booking
     room_t      rooms;
 };
 
+#define CACHED
+#ifdef CACHED
 struct hotel
 {
     void book(booking&& info)
@@ -59,7 +62,6 @@ private:
     void cleanup(room_t rooms, client_id_t client)
     {
         m_rooms -= rooms;
-
         auto client_it = m_client_bookings.find(client);
         if (--client_it->second == 0) {
             m_client_bookings.erase(client_it);
@@ -92,6 +94,56 @@ private:
     std::unordered_map<client_id_t, size_t> m_client_bookings;
     size_t m_rooms{};
 };
+#else
+struct hotel
+{
+    void book(booking&& info)
+    {
+        m_bookings.push_back(std::move(info));
+    }
+
+    size_t clients(time_t current_time)
+    {
+        remove_old(current_time);
+
+        auto tmp = m_bookings;
+        std::sort(tmp.begin(), tmp.end(), [](auto const& a, auto const& b) {
+            return a.client < b.client;
+        });
+        auto last = std::unique(tmp.begin(), tmp.end(), [](auto const& a, auto const& b) {
+            return a.client == b.client;
+        });
+        return std::distance(tmp.begin(), last);
+    }
+
+    size_t rooms(time_t current_time)
+    {
+        remove_old(current_time);
+        return std::accumulate(m_bookings.begin(), m_bookings.end(), size_t(0), [](auto prev, auto const& info) {
+            return prev + info.rooms;
+        });
+    }
+
+private:
+    // Remove old entries
+    void remove_old(time_t current_time)
+    {
+        if (m_bookings.empty()) {
+            return;
+        }
+
+        auto it = std::upper_bound(m_bookings.begin(), m_bookings.end(), current_time - TIME_WINDOW,
+                                   [](auto tm, auto const& info) {
+                                       return tm < info.time;
+                                   });
+        m_bookings.erase(m_bookings.begin(), it);
+    }
+
+private:
+    std::deque<booking> m_bookings;
+};
+#endif
+
 } // ::priv
 
 class context
@@ -136,7 +188,7 @@ int main()
     RUN_TEST(tr, Test4);
     RUN_TEST(tr, Test5);
     RUN_TEST(tr, Test6);
-    //RUN_TEST(tr, TimeTest);
+    RUN_TEST(tr, TimeTest);
 
     return 0;
 }
