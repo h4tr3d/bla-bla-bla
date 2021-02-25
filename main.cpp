@@ -176,6 +176,25 @@ private:
 
 } // ::hotel_processing
 
+//#define TESTS
+#ifdef TESTS
+
+#include "tests.inc"
+
+int main()
+{
+    test_runner tr;
+    RUN_TEST(tr, Test1);
+    RUN_TEST(tr, Test2);
+    RUN_TEST(tr, Test3);
+    RUN_TEST(tr, Test4);
+    RUN_TEST(tr, Test5);
+    RUN_TEST(tr, Test6);
+    //RUN_TEST(tr, TimeTest);
+
+    return 0;
+}
+#else
 int main()
 {
     std::ios::sync_with_stdio(false);
@@ -215,3 +234,4 @@ int main()
 
     return 0;
 }
+#endif
