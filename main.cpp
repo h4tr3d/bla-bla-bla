@@ -33,12 +33,8 @@ struct hotel
 {
     void book(booking&& info)
     {
-#if 1
-        m_bookings.emplace_back(std::move(info), this);
-#else
         setup(info.rooms, info.client);
-        m_bookings.emplace_back(std::move(info), nullptr);
-#endif
+        m_bookings.push_back(std::move(info));
     }
 
     size_t clients(time_t current_time)
@@ -54,52 +50,6 @@ struct hotel
     }
 
 private:
-
-    // Helper to setup and cleanup cache etries
-    struct booking_wrap : booking
-    {
-        booking_wrap(const booking_wrap&) = delete;
-        void operator=(const booking_wrap&) = delete;
-
-        booking_wrap() = default;
-
-        booking_wrap(booking_wrap&& other):
-            booking_wrap()
-        {
-            swap(other);
-        }
-
-        booking_wrap& operator=(booking_wrap&& other)
-        {
-            booking_wrap(std::move(other)).swap(*this);
-            return *this;
-        }
-
-        booking_wrap(booking&& other, hotel* parent) :
-            booking(std::move(other)),
-            parent(parent)
-        {
-            if (parent)
-                parent->setup(rooms, client);
-        }
-
-        ~booking_wrap()
-        {
-            if (parent)
-                parent->cleanup(rooms, client);
-        }
-
-        void swap(booking_wrap& other)
-        {
-            std::swap(parent, other.parent);
-            std::swap(time, other.time);
-            std::swap(client, other.client);
-            std::swap(rooms, other.rooms);
-        }
-
-        hotel* parent = nullptr;
-    };
-
     void setup(room_t rooms, client_id_t client)
     {
         m_rooms += rooms;
@@ -123,14 +73,6 @@ private:
             return;
         }
 
-#if 1
-        auto it = std::upper_bound(m_bookings.begin(), m_bookings.end(), current_time - TIME_WINDOW,
-                                   [](auto tm, auto const& booking) {
-                                       return tm < booking.time;
-                                   });
-        if (it != m_bookings.begin())
-            m_bookings.erase(m_bookings.begin(), it);
-#else
         auto it = m_bookings.begin();
         for (; it != m_bookings.end(); ++it) {
             if (it->time > (current_time - TIME_WINDOW)) {
@@ -141,15 +83,14 @@ private:
 
         if (it != m_bookings.begin())
             m_bookings.erase(m_bookings.begin(), it);
-#endif
     }
 
 private:
+    //
+    std::deque<booking> m_bookings;
     // Cache
     std::unordered_map<client_id_t, size_t> m_client_bookings;
     size_t m_rooms{};
-    //
-    std::deque<booking_wrap> m_bookings;
 };
 } // ::priv
 
