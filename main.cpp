@@ -14,7 +14,8 @@ struct hotel;
 
 using time_t       = int64_t;
 using client_id_t  = uint32_t;
-using room_t       = uint16_t;
+//using room_t       = uint16_t;
+using room_t       = size_t;
 using hotels_map_t = std::unordered_map<std::string, priv::hotel>;
 
 //constexpr time_t start_time;
@@ -32,7 +33,12 @@ struct hotel
 {
     void book(booking&& info)
     {
+#if 1
         m_bookings.emplace_back(std::move(info), this);
+#else
+        setup(info.rooms, info.client);
+        m_bookings.emplace_back(std::move(info), nullptr);
+#endif
     }
 
     size_t clients(time_t current_time)
@@ -41,7 +47,7 @@ struct hotel
         return m_client_bookings.size();
     }
 
-    room_t rooms(time_t current_time)
+    size_t rooms(time_t current_time)
     {
         remove_old(current_time);
         return m_rooms;
@@ -122,27 +128,26 @@ private:
                                    [](auto tm, auto const& booking) {
                                        return tm < booking.time;
                                    });
-        m_bookings.erase(m_bookings.begin(), it);
+        if (it != m_bookings.begin())
+            m_bookings.erase(m_bookings.begin(), it);
 #else
         auto it = m_bookings.begin();
-        if (it->time > current_time - TIME_WINDOW)
-            return;
-
-        for (; it < m_bookings.end(); ++it) {
-            if (it->time > current_time - TIME_WINDOW)
+        for (; it != m_bookings.end(); ++it) {
+            if (it->time > (current_time - TIME_WINDOW)) {
                 break;
-
+            }
             cleanup(it->rooms, it->client);
         }
 
-        m_bookings.erase(m_bookings.begin(), it);
+        if (it != m_bookings.begin())
+            m_bookings.erase(m_bookings.begin(), it);
 #endif
     }
 
 private:
     // Cache
     std::unordered_map<client_id_t, size_t> m_client_bookings;
-    room_t m_rooms{};
+    size_t m_rooms{};
     //
     std::deque<booking_wrap> m_bookings;
 };
