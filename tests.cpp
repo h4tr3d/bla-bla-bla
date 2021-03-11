@@ -1,4 +1,5 @@
 #include "tests.h"
+#include "hotels.h"
 #include <random>
 
 using namespace std;
@@ -237,4 +238,18 @@ void Test6() {
     ASSERT_EQUAL(manager.clients("hilton"), 2);
     ASSERT_EQUAL(manager.rooms("mariot"), 3);
     ASSERT_EQUAL(manager.clients("mariot"), 1);
+}
+
+int main()
+{
+    test_runner tr;
+    RUN_TEST(tr, Test1);
+    RUN_TEST(tr, Test2);
+    RUN_TEST(tr, Test3);
+    RUN_TEST(tr, Test4);
+    RUN_TEST(tr, Test5);
+    RUN_TEST(tr, Test6);
+    //RUN_TEST(tr, TimeTest);
+
+    return 0;
 }
