@@ -18,8 +18,9 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 #set(CMAKE_C_EXTENSIONS OFF) # turn on/off GNU or some other extensions
 
-#find_package(Threads)
+find_package(Threads)
 #find_package(PkgConfig)
+find_package(fmt REQUIRED)
 
 # Warnings
 set (WARNING_OPTIONS
@@ -41,3 +42,7 @@ target_compile_options(${PROJECT_NAME} PRIVATE ${WARNING_OPTIONS})
 
 add_executable(${PROJECT_NAME}_tests tests.cpp)
 target_link_libraries(${PROJECT_NAME}_tests ${PROJECT_NAME}::process)
+
+add_executable(gen gen.cpp)
+target_link_libraries(gen fmt::fmt ${PROJECT_NAME}::process Threads::Threads)
+
